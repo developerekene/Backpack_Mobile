@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "722513442785",
+    "project_id": "backpack-9e1e0",
+    "storage_bucket": "backpack-9e1e0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:722513442785:android:66925a221fceeae03104a0",
+        "android_client_info": {
+          "package_name": "com.devekene.backpack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "722513442785-imbsaqh73flng95q7i9mb97bp2h7ke1f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrC9rfGtGTxe0a3zpl5u0SVQEgHe0fFJk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "722513442785-imbsaqh73flng95q7i9mb97bp2h7ke1f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

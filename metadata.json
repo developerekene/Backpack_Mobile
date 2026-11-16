@@ -1,0 +1,6 @@
+{
+  "name": "Backpack",
+  "description": "Native Android companion app for Backpack Edu platform - fast mobile check-ins, course viewer, mobile capture suite, and notifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

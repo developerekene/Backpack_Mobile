@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "UserProfile": {
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["userId", "displayName", "email", "role"]
+    },
+    "UserNote": {
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "courseId": { "type": "string" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      },
+      "required": ["userId", "title", "content"]
+    },
+    "Enrollment": {
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "instructorName": { "type": "string" },
+        "progress": { "type": "number" },
+        "enrolledAt": { "type": "timestamp" }
+      },
+      "required": ["userId", "courseId", "courseTitle"]
+    },
+    "Attendance": {
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "status": { "type": "string" },
+        "checkInTime": { "type": "timestamp" }
+      },
+      "required": ["userId", "eventId", "status"]
+    },
+    "Course": {
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "code": { "type": "string" },
+        "instructor": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "syllabus": { "type": "string" },
+        "announcement": { "type": "string" },
+        "modulesCount": { "type": "number" }
+      },
+      "required": ["title", "code", "instructor"]
+    },
+    "ScheduleEvent": {
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseCode": { "type": "string" },
+        "room": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "isLive": { "type": "boolean" },
+        "liveStreamUrl": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["title", "courseId", "startTime", "endTime"]
+    },
+    "NotificationItem": {
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "timestamp": { "type": "timestamp" }
+      },
+      "required": ["userId", "title", "message", "type", "isRead"]
+    },
+    "Submission": {
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string" },
+        "fileUri": { "type": "string" },
+        "note": { "type": "string" },
+        "status": { "type": "string" },
+        "submittedAt": { "type": "timestamp" }
+      },
+      "required": ["userId", "courseId", "title", "type"]
+    }
+  }
+}

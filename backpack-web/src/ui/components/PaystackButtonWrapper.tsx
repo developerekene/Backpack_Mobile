@@ -1,0 +1,169 @@
+import React, { useState } from "react";
+import { CreditCard, RefreshCw, Split } from "lucide-react";
+import { triggerPaystackPayment, generateReferenceNumber } from "../../lib/paystack";
+
+interface PaystackProps {
+  email: string;
+  amount: number;
+  baseAmount?: number;
+  transactionCharge?: number;
+  currency: string;
+  subaccountCode?: string;
+  splitCode?: string;
+  mode?: "test" | "live";
+  providerName?: string;
+  providerSharePercent?: number;
+  courseId?: string;
+  courseTitle?: string;
+  studentName?: string;
+  onSuccess: (reference?: string) => void;
+  onClose?: () => void;
+  label?: string;
+  disabled?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+}
+
+export const PaystackButtonWrapper: React.FC<PaystackProps> = ({
+  email,
+  amount,
+  baseAmount,
+  transactionCharge,
+  currency,
+  subaccountCode,
+  splitCode,
+  mode,
+  providerName,
+  courseId,
+  courseTitle,
+  studentName,
+  onSuccess,
+  onClose,
+  label = "Pay Now",
+  disabled = false,
+  className,
+  children,
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handlePayment = () => {
+    setErrorMessage(null);
+    if (!email) {
+      setErrorMessage("Please enter a valid email to proceed with payment.");
+      return;
+    }
+
+    setLoading(true);
+    setStatusMessage("Opening Secure Checkout...");
+
+    const generatedRef = generateReferenceNumber();
+
+    triggerPaystackPayment({
+      email,
+      amount,
+      baseAmount,
+      transactionCharge,
+      currency: currency || "NGN",
+      subaccount: subaccountCode,
+      subaccount_code: subaccountCode,
+      split_code: splitCode,
+      mode: mode || "live",
+      reference: generatedRef,
+      studentDetails: {
+        firstName: studentName ? studentName.split(" ")[0] : email.split("@")[0],
+        lastName: studentName ? studentName.split(" ").slice(1).join(" ") : "",
+        email,
+        courseTitle: courseTitle || "Backpack Course",
+      },
+      metadata: {
+        courseId,
+        courseTitle,
+        providerName,
+        subaccount_code: subaccountCode,
+        subaccountCode,
+        base_amount: baseAmount,
+        transaction_charge: transactionCharge,
+        bearer: "account",
+        split_rule: "subaccount_100pct_base_fee_platform_bears_paystack_fees",
+        mode: mode || "live",
+      },
+      onSuccess: (res) => {
+        setLoading(false);
+        setStatusMessage("Payment successful!");
+        const ref = res?.reference || res?.trxref || generatedRef;
+        onSuccess(ref);
+      },
+      onCancel: () => {
+        console.log("Payment cancelled");
+        setLoading(false);
+        setStatusMessage(null);
+        if (onClose) onClose();
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onError: (error: any) => {
+        console.log("Payment error:", error);
+        setLoading(false);
+        setStatusMessage(null);
+        let msg = "Payment could not be completed.";
+        if (error) {
+          if (typeof error === "string") {
+            msg = error;
+          } else if (error.message && typeof error.message === "string") {
+            msg = error.message;
+          } else if (error.type === "setup" && error.message) {
+            msg = String(error.message);
+          }
+        }
+        setErrorMessage(msg);
+      },
+    });
+  };
+
+  return (
+    <div className="w-full space-y-2">
+      {errorMessage && (
+        <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs rounded-xl font-medium">
+          {errorMessage}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={handlePayment}
+        disabled={disabled || loading}
+        className={
+          className ||
+          "w-full justify-center px-5 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition flex items-center shadow-lg shadow-emerald-600/20"
+        }
+      >
+        {loading ? (
+          <>
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin text-white" />
+            <span>{statusMessage || "Processing Checkout..."}</span>
+          </>
+        ) : children ? (
+          children
+        ) : (
+          <>
+            <CreditCard className="w-4 h-4 mr-2" />
+            <span>{label}</span>
+          </>
+        )}
+      </button>
+
+      {subaccountCode && (
+        <div className="flex items-center justify-center space-x-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold pt-1">
+          <Split className="w-3 h-3 text-emerald-500" />
+          <span>
+            Payment Split Enabled • Direct Payout to {providerName || "Provider"} ({subaccountCode})
+          </span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-center space-x-2 text-[10px] text-slate-400 pt-0.5">
+        <span>256-bit Encrypted Checkout • Powered by Secure Payment Gateway</span>
+      </div>
+    </div>
+  );
+};
