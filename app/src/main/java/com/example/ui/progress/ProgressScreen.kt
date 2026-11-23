@@ -386,7 +386,7 @@ fun SubmissionCard(
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    text = assessmentTitle?.ifBlank { null } ?: "Submission ${submission.id.takeLast(6)}",
+                    text = assessmentTitle?.ifBlank { null } ?: "Assessment Submission",
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )

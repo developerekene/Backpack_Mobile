@@ -8,10 +8,17 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -64,6 +71,32 @@ class BackpackRepository(context: Context) {
 
     fun currentUserEmail(): String = auth.currentUser?.email ?: ""
 
+    companion object {
+        private val streamLock = Any()
+        private val sharedScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+        @Volatile
+        private var activeSnapshotUid: String? = null
+
+        @Volatile
+        private var sharedSnapshotFlow: SharedFlow<BackpackSnapshotData>? = null
+
+        @Volatile
+        private var activeProfileUid: String? = null
+
+        @Volatile
+        private var sharedProfileFlow: SharedFlow<UserProfile>? = null
+
+        fun clearSessionCache() {
+            synchronized(streamLock) {
+                activeSnapshotUid = null
+                sharedSnapshotFlow = null
+                activeProfileUid = null
+                sharedProfileFlow = null
+            }
+        }
+    }
+
     // --- Profile Handling ---
 
     suspend fun fetchUserProfileOnce(uid: String): UserProfile {
@@ -101,7 +134,29 @@ class BackpackRepository(context: Context) {
             emit(UserProfile())
             return@flow
         }
-        db.collection("backpack").document(uid).snapshots()
+        if (targetUserId != null) {
+            db.collection("backpack").document(uid).snapshots()
+                .map { snap ->
+                    BackpackSnapshotParser.parseUserProfile(
+                        uid = uid,
+                        doc = snap,
+                        fallbackName = currentUserDisplayName(),
+                        fallbackEmail = currentUserEmail()
+                    )
+                }
+                .flowOn(Dispatchers.Default)
+                .catch { emit(UserProfile(userId = uid, displayName = currentUserDisplayName())) }
+                .collect { emit(it) }
+            return@flow
+        }
+        getOrCreateProfileFlow(uid).collect { emit(it) }
+    }
+
+    private fun getOrCreateProfileFlow(uid: String): SharedFlow<UserProfile> = synchronized(streamLock) {
+        val existing = sharedProfileFlow
+        if (existing != null && activeProfileUid == uid) return@synchronized existing
+
+        val fresh = db.collection("backpack").document(uid).snapshots()
             .map { snap ->
                 BackpackSnapshotParser.parseUserProfile(
                     uid = uid,
@@ -110,20 +165,48 @@ class BackpackRepository(context: Context) {
                     fallbackEmail = currentUserEmail()
                 )
             }
+            .flowOn(Dispatchers.Default)
             .catch { emit(UserProfile(userId = uid, displayName = currentUserDisplayName())) }
-            .collect { emit(it) }
+            .shareIn(
+                scope = sharedScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000, replayExpirationMillis = 0),
+                replay = 1
+            )
+        activeProfileUid = uid
+        sharedProfileFlow = fresh
+        fresh
     }
 
     // --- Unified Real-Time Backpack Snapshot ---
 
     fun observeBackpackSnapshot(): Flow<BackpackSnapshotData> = flow {
-        db.collection("backpack").snapshots()
+        val uid = currentUserId()
+        if (uid.isBlank()) {
+            emit(BackpackSnapshotData())
+            return@flow
+        }
+        getOrCreateSnapshotFlow(uid).collect { emit(it) }
+    }
+
+    private fun getOrCreateSnapshotFlow(uid: String): SharedFlow<BackpackSnapshotData> = synchronized(streamLock) {
+        val existing = sharedSnapshotFlow
+        if (existing != null && activeSnapshotUid == uid) return@synchronized existing
+
+        val fresh = db.collection("backpack").snapshots()
             .map { snapshot -> BackpackSnapshotParser.parseSnapshot(snapshot) }
+            .flowOn(Dispatchers.Default)
             .catch { err ->
                 Log.e("BackpackRepository", "Error observing backpack collection", err)
                 emit(BackpackSnapshotData())
             }
-            .collect { emit(it) }
+            .shareIn(
+                scope = sharedScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000, replayExpirationMillis = 0),
+                replay = 1
+            )
+        activeSnapshotUid = uid
+        sharedSnapshotFlow = fresh
+        fresh
     }
 
     // --- Shared Firestore Read-Modify-Write Array Helpers (Map & Legacy 1-Element Array) ---

@@ -15,7 +15,7 @@ import com.example.data.model.NotificationItem
 object NotificationHelper {
     private const val CHANNEL_ID = "backpack_push_alerts"
     private const val CHANNEL_NAME = "Backpack Push Alerts"
-    private const val CHANNEL_DESC = "Push notifications for Backpack Edu courses, grades, and reminders"
+    private const val CHANNEL_DESC = "Push notifications for Backpack courses, grades, and reminders"
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

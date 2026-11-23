@@ -421,12 +421,12 @@ fun SubmissionHistoryCard(submission: Submission) {
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "Submission ID: ${submission.id.takeLast(6)}",
+                        text = "Assessment Submission",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
                     Text(
-                        text = "Course: ${submission.courseId} • ${submission.submittedAt}",
+                        text = "Submitted: ${submission.submittedAt.take(10)}",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

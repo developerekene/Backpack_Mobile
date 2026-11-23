@@ -84,6 +84,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _isSubmitting.value = true
             _errorMessage.value = null
             try {
+                BackpackRepository.clearSessionCache()
                 val authResult = Firebase.auth.signInWithEmailAndPassword(trimmedEmail, passwordInput).await()
                 val user = authResult.user ?: throw IllegalStateException("Authentication failed: No user returned.")
 
@@ -130,6 +131,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun signOut() {
+        BackpackRepository.clearSessionCache()
         try {
             Firebase.auth.signOut()
         } catch (_: Exception) {}

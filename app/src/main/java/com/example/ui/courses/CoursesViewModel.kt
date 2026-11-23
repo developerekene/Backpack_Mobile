@@ -10,9 +10,12 @@ import com.example.data.repository.BackpackRepository
 import com.example.data.repository.BackpackSnapshotData
 import com.example.data.repository.BackpackSnapshotParser
 import com.example.util.FileUploadUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 
 class CoursesViewModel(application: Application) : AndroidViewModel(application) {
@@ -96,16 +99,18 @@ class CoursesViewModel(application: Application) : AndroidViewModel(application)
     init {
         loadSavedMessages()
         viewModelScope.launch {
-            repository.observeUserProfile().collectLatest { profile ->
-                _userProfile.value = profile
-                recomputeFromSnapshot(latestSnapshot)
+            combine(
+                repository.observeUserProfile(),
+                repository.observeBackpackSnapshot()
+            ) { profile, snap ->
+                profile to snap
             }
-        }
-        viewModelScope.launch {
-            repository.observeBackpackSnapshot().collectLatest { snap ->
-                latestSnapshot = snap
-                recomputeFromSnapshot(snap)
-            }
+                .flowOn(Dispatchers.Default)
+                .collectLatest { (profile, snap) ->
+                    _userProfile.value = profile
+                    latestSnapshot = snap
+                    recomputeFromSnapshot(snap)
+                }
         }
     }
 

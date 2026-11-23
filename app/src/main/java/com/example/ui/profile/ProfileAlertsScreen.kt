@@ -58,14 +58,12 @@ fun ProfileAlertsScreen(
         ?: "Authenticated User"
 
     val roleLabel = userProfile?.userRole?.label ?: "Student"
-    val uid = userProfile?.userId?.ifBlank { null } ?: firebaseUser?.uid ?: ""
     val orgName = organizations.firstOrNull {
         it.id == userProfile?.orgId || it.ownerId == userProfile?.orgId
     }?.name
     val associatedOrgText = orgName?.ifBlank { null }
         ?: userProfile?.institutionName?.ifBlank { null }
-        ?: userProfile?.orgId?.ifBlank { null }
-        ?: "Independent Learner"
+        ?: if (!userProfile?.orgId.isNullOrBlank()) "Affiliated Organization" else "Independent Learner"
 
     val openUrl: (String) -> Unit = { url ->
         runCatching {
@@ -272,9 +270,6 @@ fun ProfileAlertsScreen(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         ProfileDetailRow(Icons.Default.CalendarToday, "Member Since", created.take(10))
                     }
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    ProfileDetailRow(Icons.Default.Fingerprint, "Account UID", uid.take(16) + if (uid.length > 16) "..." else "")
                 }
             }
         }

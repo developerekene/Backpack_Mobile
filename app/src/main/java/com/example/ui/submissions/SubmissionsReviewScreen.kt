@@ -177,7 +177,7 @@ fun SubmissionsReviewScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(joinReq.userName.ifBlank { joinReq.userId }, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Text(joinReq.userName.ifBlank { "Staff Member" }, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         Text(joinReq.orgName, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Text(
@@ -223,7 +223,7 @@ fun SubmissionsReviewScreen(
                     } else {
                         items(filteredSubmissions, key = { it.id }) { submission ->
                             val assessment = assessmentById[submission.assessmentId]
-                            val courseTitle = courseById[submission.courseId]?.title ?: submission.courseId
+                            val courseTitle = courseById[submission.courseId]?.title ?: "Course"
                             AssessmentSubmissionGradingCard(
                                 submission = submission,
                                 assessment = assessment,
@@ -350,7 +350,7 @@ private fun ApplicationQueueCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(request.userName.ifBlank { request.userId }, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(request.userName.ifBlank { "Applicant" }, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     Text(courseTitle, fontSize = 13.sp, color = BackpackPrimaryBlue, fontWeight = FontWeight.SemiBold)
                     val meta = listOfNotNull(
                         request.sessionName?.ifBlank { null },

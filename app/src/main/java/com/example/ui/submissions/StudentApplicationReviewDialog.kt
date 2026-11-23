@@ -67,7 +67,7 @@ fun StudentApplicationReviewDialog(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Applicant Dossier", fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                        Text(request.userName.ifBlank { request.userId }, fontSize = 13.sp, color = BackpackPrimaryBlue, fontWeight = FontWeight.SemiBold)
+                        Text(request.userName.ifBlank { "Applicant" }, fontSize = 13.sp, color = BackpackPrimaryBlue, fontWeight = FontWeight.SemiBold)
                     }
                     IconButton(onClick = onDismiss, enabled = !isSubmitting) {
                         Icon(Icons.Default.Close, contentDescription = "Close application dialog")

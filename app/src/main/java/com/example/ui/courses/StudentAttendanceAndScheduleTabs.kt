@@ -496,7 +496,6 @@ fun LazyListScope.studentScheduleAndCertTab(
                         color = BackpackStatusOrange
                     )
                 } else {
-                    val certId = "CERT-${course.id.take(6).uppercase()}-${(userProfile?.userId ?: "").take(6).uppercase()}"
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = BackpackStatusGreen, modifier = Modifier.size(28.dp))
                         Spacer(modifier = Modifier.width(10.dp))
@@ -514,7 +513,7 @@ fun LazyListScope.studentScheduleAndCertTab(
                     cert.gradeLevel?.ifBlank { null }?.let {
                         Text("Level: $it", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Text("Certificate ID: $certId", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Status: Verified Course Completion", fontSize = 11.sp, color = BackpackStatusGreen, fontWeight = FontWeight.Medium)
 
                     OutlinedButton(
                         onClick = {

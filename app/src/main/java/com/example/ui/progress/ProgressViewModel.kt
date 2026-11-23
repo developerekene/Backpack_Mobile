@@ -7,9 +7,12 @@ import com.example.data.model.*
 import com.example.data.repository.BackpackRepository
 import com.example.data.repository.BackpackSnapshotData
 import com.example.data.repository.BackpackSnapshotParser
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 
 class ProgressViewModel(application: Application) : AndroidViewModel(application) {
@@ -39,16 +42,18 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
 
     init {
         viewModelScope.launch {
-            repository.observeUserProfile().collectLatest { profile ->
-                _userProfile.value = profile
-                recompute(latestSnapshot)
+            combine(
+                repository.observeUserProfile(),
+                repository.observeBackpackSnapshot()
+            ) { profile, snap ->
+                profile to snap
             }
-        }
-        viewModelScope.launch {
-            repository.observeBackpackSnapshot().collectLatest { snap ->
-                latestSnapshot = snap
-                recompute(snap)
-            }
+                .flowOn(Dispatchers.Default)
+                .collectLatest { (profile, snap) ->
+                    _userProfile.value = profile
+                    latestSnapshot = snap
+                    recompute(snap)
+                }
         }
     }
 

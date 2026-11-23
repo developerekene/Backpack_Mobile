@@ -49,9 +49,9 @@ fun SplashScreen(
     var startAnimation by remember { mutableStateOf(false) }
 
     val scaleAnimation by animateFloatAsState(
-        targetValue = if (startAnimation) 1f else 0.6f,
+        targetValue = if (startAnimation) 1f else 0.72f,
         animationSpec = tween(
-            durationMillis = 900,
+            durationMillis = 480,
             easing = FastOutSlowInEasing
         ),
         label = "LogoScale"
@@ -59,13 +59,13 @@ fun SplashScreen(
 
     val alphaAnimation by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 800),
+        animationSpec = tween(durationMillis = 420),
         label = "LogoAlpha"
     )
 
     LaunchedEffect(Unit) {
         startAnimation = true
-        delay(1500)
+        delay(600)
         onSplashFinished()
     }
 

@@ -110,7 +110,7 @@ fun AssessmentSubmissionGradingCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = submission.userName?.ifBlank { null } ?: submission.userId,
+                        text = submission.userName?.ifBlank { null } ?: "Student",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )

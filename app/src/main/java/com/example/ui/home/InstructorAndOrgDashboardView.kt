@@ -735,14 +735,14 @@ private fun DashboardAssessmentOverviewCard(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "${sub.userName ?: sub.userId} • ${ass?.title ?: "Assessment"}",
+                                text = "${sub.userName?.ifBlank { null } ?: "Student"} • ${ass?.title ?: "Assessment"}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = course?.title ?: sub.courseId,
+                                text = course?.title ?: "Course",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -863,7 +863,7 @@ fun AssociatedOrganisationsDialog(
                 if (organizations.isEmpty()) {
                     Text(
                         text = if (!fallbackOrgId.isNullOrBlank()) {
-                            "Linked Organization ID: $fallbackOrgId"
+                            "Your faculty account is linked to an institution."
                         } else {
                             "No linked organizations found in your faculty profile."
                         },
