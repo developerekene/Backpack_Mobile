@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.devekene.backpack",
+      "sha256_cert_fingerprints": [
+        "7D:3B:F3:4E:8E:E6:BB:1D:E8:10:44:AD:F0:4D:36:D1:A8:D8:79:59:2C:5F:11:FE:E4:FE:A6:15:84:D1:99:51",
+        "1C:86:D1:24:64:1E:B9:F7:42:AC:EF:44:94:92:B3:87:34:76:60:95:03:DD:51:95:0C:EE:E9:C4:35:B3:AF:82",
+        "84:F7:4B:CB:67:46:25:A1:EE:80:1A:FB:8E:02:15:76:B4:53:C4:AC:29:D4:62:52:CF:0B:39:D9:06:BE:EE:1C"
+      ]
+    }
+  }
+]
