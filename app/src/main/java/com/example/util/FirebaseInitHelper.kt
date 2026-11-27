@@ -9,6 +9,12 @@ import com.google.firebase.FirebaseOptions
 object FirebaseInitHelper {
     private val lock = Any()
 
+    private const val DEFAULT_APP_ID = "1:722513442785:android:66925a221fceeae03104a0"
+    private const val DEFAULT_API_KEY = "AIzaSyBrC9rfGtGTxe0a3zpl5u0SVQEgHe0fFJk"
+    private const val DEFAULT_PROJECT_ID = "backpack-9e1e0"
+    private const val DEFAULT_GCM_SENDER_ID = "722513442785"
+    private const val DEFAULT_STORAGE_BUCKET = "backpack-9e1e0.firebasestorage.app"
+
     fun ensureInitialized(context: Context): Boolean {
         val appContext = context.applicationContext ?: context
         if (FirebaseApp.getApps(appContext).isNotEmpty()) {
@@ -18,38 +24,50 @@ object FirebaseInitHelper {
             if (FirebaseApp.getApps(appContext).isNotEmpty()) {
                 return true
             }
-            val defaultInit = runCatching {
-                FirebaseApp.initializeApp(appContext)
-            }.onFailure { err ->
-                Log.w("FirebaseInitHelper", "Standard FirebaseApp.initializeApp failed, trying resource fallback", err)
-            }.getOrNull()
 
-            if (defaultInit != null || FirebaseApp.getApps(appContext).isNotEmpty()) {
-                return true
+            // 1. Try standard default initialization from google-services metadata
+            try {
+                FirebaseApp.initializeApp(appContext)
+                if (FirebaseApp.getApps(appContext).isNotEmpty()) {
+                    return true
+                }
+            } catch (e: IllegalStateException) {
+                // Already initialized
+                if (FirebaseApp.getApps(appContext).isNotEmpty()) {
+                    return true
+                }
+            } catch (e: Exception) {
+                Log.w("FirebaseInitHelper", "Standard FirebaseApp.initializeApp failed", e)
             }
 
-            return runCatching {
-                val appId = readStringRes(appContext, "google_app_id")
-                val apiKey = readStringRes(appContext, "google_api_key")
-                val projectId = readStringRes(appContext, "project_id")
-                val gcmSenderId = readStringRes(appContext, "gcm_defaultSenderId")
-                val storageBucket = readStringRes(appContext, "google_storage_bucket")
+            // 2. Try explicit FirebaseOptions builder with resource or fallback constants
+            try {
+                val appId = readStringRes(appContext, "google_app_id").ifBlank { DEFAULT_APP_ID }
+                val apiKey = readStringRes(appContext, "google_api_key").ifBlank { DEFAULT_API_KEY }
+                val projectId = readStringRes(appContext, "project_id").ifBlank { DEFAULT_PROJECT_ID }
+                val gcmSenderId = readStringRes(appContext, "gcm_defaultSenderId").ifBlank { DEFAULT_GCM_SENDER_ID }
+                val storageBucket = readStringRes(appContext, "google_storage_bucket").ifBlank { DEFAULT_STORAGE_BUCKET }
 
                 if (appId.isNotBlank() && apiKey.isNotBlank()) {
-                    val builder = FirebaseOptions.Builder()
+                    val options = FirebaseOptions.Builder()
                         .setApplicationId(appId)
                         .setApiKey(apiKey)
-                    if (projectId.isNotBlank()) builder.setProjectId(projectId)
-                    if (gcmSenderId.isNotBlank()) builder.setGcmSenderId(gcmSenderId)
-                    if (storageBucket.isNotBlank()) builder.setStorageBucket(storageBucket)
-                    FirebaseApp.initializeApp(appContext, builder.build())
-                    true
-                } else {
-                    false
+                        .setProjectId(projectId)
+                        .setGcmSenderId(gcmSenderId)
+                        .setStorageBucket(storageBucket)
+                        .build()
+                    FirebaseApp.initializeApp(appContext, options)
+                    return true
                 }
-            }.onFailure { err ->
-                Log.e("FirebaseInitHelper", "Fallback FirebaseApp initialization failed", err)
-            }.getOrDefault(false)
+            } catch (e: IllegalStateException) {
+                if (FirebaseApp.getApps(appContext).isNotEmpty()) {
+                    return true
+                }
+            } catch (e: Exception) {
+                Log.e("FirebaseInitHelper", "Explicit FirebaseOptions initialization failed", e)
+            }
+
+            return FirebaseApp.getApps(appContext).isNotEmpty()
         }
     }
 
