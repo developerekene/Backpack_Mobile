@@ -4,7 +4,9 @@ import android.content.Context
 import android.util.Log
 import com.example.R
 import com.example.data.model.*
+import com.example.util.FirebaseInitHelper
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
@@ -29,10 +31,24 @@ import kotlin.math.roundToInt
 
 class BackpackRepository(context: Context) {
 
-    private val db = FirebaseFirestore.getInstance(
-        context.applicationContext.getString(R.string.firestore_database_id)
-    )
-    private val auth = Firebase.auth
+    private val appContext = context.applicationContext ?: context
+
+    private val db: FirebaseFirestore by lazy {
+        FirebaseInitHelper.ensureInitialized(appContext)
+        val dbId = runCatching {
+            appContext.getString(R.string.firestore_database_id).trim()
+        }.getOrDefault("(default)")
+        if (dbId.isBlank() || dbId == "(default)") {
+            FirebaseFirestore.getInstance()
+        } else {
+            FirebaseFirestore.getInstance(dbId)
+        }
+    }
+
+    private val auth: FirebaseAuth by lazy {
+        FirebaseInitHelper.ensureInitialized(appContext)
+        Firebase.auth
+    }
 
     private fun getCurrentIsoTimestamp(): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
@@ -63,13 +79,14 @@ class BackpackRepository(context: Context) {
         }
     }
 
-    fun currentUserId(): String = auth.currentUser?.uid ?: ""
+    fun currentUserId(): String = runCatching { auth.currentUser?.uid }.getOrNull().orEmpty()
 
-    fun currentUserDisplayName(): String = auth.currentUser?.displayName
-        ?: auth.currentUser?.email?.substringBefore("@")?.replace(".", " ")?.replaceFirstChar { it.uppercase() }
-        ?: "Backpack User"
+    fun currentUserDisplayName(): String = runCatching {
+        auth.currentUser?.displayName
+            ?: auth.currentUser?.email?.substringBefore("@")?.replace(".", " ")?.replaceFirstChar { it.uppercase() }
+    }.getOrNull() ?: "Backpack User"
 
-    fun currentUserEmail(): String = auth.currentUser?.email ?: ""
+    fun currentUserEmail(): String = runCatching { auth.currentUser?.email }.getOrNull().orEmpty()
 
     companion object {
         private val streamLock = Any()

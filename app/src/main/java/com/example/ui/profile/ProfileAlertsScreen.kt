@@ -43,7 +43,7 @@ fun ProfileAlertsScreen(
     onSignOut: () -> Unit
 ) {
     val context = LocalContext.current
-    val firebaseUser = Firebase.auth.currentUser
+    val firebaseUser = remember { runCatching { Firebase.auth.currentUser }.getOrNull() }
     val organizations by viewModel.organizations.collectAsState()
 
     var previewDoc by remember { mutableStateOf<Pair<String, String?>?>(null) }

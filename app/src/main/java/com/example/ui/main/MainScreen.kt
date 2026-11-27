@@ -1,7 +1,9 @@
 package com.example.ui.main
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -15,15 +17,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.R
 import com.example.data.model.UserProfile
 import com.example.data.model.UserRole
@@ -54,19 +59,33 @@ fun MainScreen(
     userProfile: UserProfile?,
     isDarkMode: Boolean,
     onToggleTheme: () -> Unit,
+    initialDestination: String? = null,
+    onDestinationHandled: () -> Unit = {},
     onSignOut: () -> Unit
 ) {
+    val context = LocalContext.current
     val role = userProfile?.userRole ?: UserRole.STUDENT
-    
-    // Request push notification permission on Android 13+
+
+    var hasRequestedNotificationPermission by rememberSaveable { mutableStateOf(false) }
+
+    // Request push notification permission on Android 13+ once if not already granted
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { /* Permission granted state handled by OS */ }
     )
 
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasRequestedNotificationPermission) {
+            val alreadyGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            hasRequestedNotificationPermission = true
+            if (!alreadyGranted) {
+                runCatching {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
         }
     }
 
@@ -92,9 +111,24 @@ fun MainScreen(
         )
     }
 
-    var selectedTab by remember { mutableIntStateOf(0) }
-    var currentSubScreen by remember { mutableStateOf<String?>(null) } // "notifications", "events", "accessibility"
-    var showHamburgerDrawer by remember { mutableStateOf(false) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) } // "notifications", "events", "accessibility"
+    var showHamburgerDrawer by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(initialDestination) {
+        if (!initialDestination.isNullOrBlank()) {
+            currentSubScreen = initialDestination
+            onDestinationHandled()
+        }
+    }
+
+    BackHandler(enabled = showHamburgerDrawer) {
+        showHamburgerDrawer = false
+    }
+
+    BackHandler(enabled = currentSubScreen != null && !showHamburgerDrawer) {
+        currentSubScreen = null
+    }
 
     val unreadCount by profileAlertsViewModel.unreadCount.collectAsState()
     val events by homeViewModel.events.collectAsState()
@@ -249,7 +283,8 @@ fun MainScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .width(320.dp)
+                        .fillMaxWidth(0.85f)
+                        .widthIn(max = 320.dp)
                         .clickable(enabled = false) {}, // Consume clicks
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 16.dp
@@ -257,6 +292,8 @@ fun MainScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
+                            .statusBarsPadding()
+                            .navigationBarsPadding()
                             .padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {

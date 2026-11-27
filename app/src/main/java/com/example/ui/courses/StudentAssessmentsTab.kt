@@ -400,11 +400,13 @@ private fun StudentAssessmentCard(
                     if (submission == null) {
                         OutlinedButton(
                             onClick = {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://backpack-edu.com/course/$courseId")
-                                )
-                                context.startActivity(intent)
+                                runCatching {
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("https://backpack-edu.com/course/$courseId")
+                                    )
+                                    context.startActivity(intent)
+                                }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()

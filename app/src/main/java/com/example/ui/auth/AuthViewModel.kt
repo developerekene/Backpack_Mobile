@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.model.UserProfile
 import com.example.data.model.UserRole
 import com.example.data.repository.BackpackRepository
+import com.example.util.FirebaseInitHelper
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,11 +39,18 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     val errorMessage: StateFlow<String?> = _errorMessage
 
     init {
+        FirebaseInitHelper.ensureInitialized(application)
         checkCurrentUser()
     }
 
     fun checkCurrentUser() {
-        val firebaseUser = Firebase.auth.currentUser
+        val firebaseUser = runCatching {
+            FirebaseInitHelper.ensureInitialized(getApplication())
+            Firebase.auth.currentUser
+        }.getOrElse { err ->
+            Log.e("AuthViewModel", "Unable to access FirebaseAuth currentUser", err)
+            null
+        }
         if (firebaseUser != null) {
             _authState.value = AuthState.Loading
             viewModelScope.launch {

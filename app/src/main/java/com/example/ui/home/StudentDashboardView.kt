@@ -101,8 +101,10 @@ fun StudentDashboardView(
     }
 
     val openWebPortal: (String) -> Unit = { path ->
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://backpack-edu.com$path"))
-        context.startActivity(intent)
+        runCatching {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://backpack-edu.com$path"))
+            context.startActivity(intent)
+        }
     }
 
     LazyColumn(

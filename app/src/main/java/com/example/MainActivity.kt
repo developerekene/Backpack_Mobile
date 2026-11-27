@@ -1,5 +1,7 @@
 package com.example
 
+import android.app.Application
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -23,8 +26,8 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ui.auth.AuthState
 import com.example.ui.auth.AuthScreen
+import com.example.ui.auth.AuthState
 import com.example.ui.auth.AuthViewModel
 import com.example.ui.capture.CaptureViewModel
 import com.example.ui.courses.CoursesViewModel
@@ -32,47 +35,71 @@ import com.example.ui.home.HomeViewModel
 import com.example.ui.main.MainScreen
 import com.example.ui.profile.ProfileAlertsViewModel
 import com.example.ui.progress.ProgressViewModel
-import com.example.ui.submissions.SubmissionsViewModel
 import com.example.ui.splash.SplashScreen
+import com.example.ui.submissions.SubmissionsViewModel
 import com.example.ui.theme.BackpackTheme
+import com.example.util.FirebaseInitHelper
 import com.example.util.NotificationHelper
 
 class MainActivity : ComponentActivity() {
+    private val pendingDestination = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseInitHelper.ensureInitialized(applicationContext)
+        NotificationHelper.createNotificationChannel(applicationContext)
+        pendingDestination.value = intent?.getStringExtra(NotificationHelper.EXTRA_OPEN_DESTINATION)
+
         enableEdgeToEdge()
 
         setContent {
             val systemDark = isSystemInDarkTheme()
-            var isDarkMode by remember { mutableStateOf(systemDark) }
+            var isDarkMode by rememberSaveable { mutableStateOf(systemDark) }
+            var isSplashVisible by rememberSaveable { mutableStateOf(true) }
+            val destination by pendingDestination
 
             BackpackTheme(darkTheme = isDarkMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    var isSplashVisible by remember { mutableStateOf(true) }
-
                     if (isSplashVisible) {
                         SplashScreen(
                             onSplashFinished = { isSplashVisible = false }
                         )
                     } else {
                         BackpackApp(
+                            application = application,
                             isDarkMode = isDarkMode,
-                            onToggleTheme = { isDarkMode = !isDarkMode }
+                            onToggleTheme = { isDarkMode = !isDarkMode },
+                            initialDestination = destination,
+                            onDestinationHandled = { pendingDestination.value = null }
                         )
                     }
                 }
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val dest = intent.getStringExtra(NotificationHelper.EXTRA_OPEN_DESTINATION)
+        if (!dest.isNullOrBlank()) {
+            pendingDestination.value = dest
+        }
+    }
 }
 
 @Composable
 fun BackpackApp(
+    application: Application,
     isDarkMode: Boolean,
-    onToggleTheme: () -> Unit
+    onToggleTheme: () -> Unit,
+    initialDestination: String? = null,
+    onDestinationHandled: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val factory = remember(context) { ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as android.app.Application) }
+    val factory = remember(application) {
+        ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+    }
     val authViewModel: AuthViewModel = viewModel(factory = factory)
     val authState by authViewModel.authState.collectAsState()
     val sessionToken by authViewModel.sessionToken.collectAsState()
@@ -117,6 +144,8 @@ fun BackpackApp(
                         userProfile = effectiveProfile,
                         isDarkMode = isDarkMode,
                         onToggleTheme = onToggleTheme,
+                        initialDestination = initialDestination,
+                        onDestinationHandled = onDestinationHandled,
                         onSignOut = {
                             NotificationHelper.clearAllNotifications(context)
                             sessionStoreOwner.viewModelStore.clear()

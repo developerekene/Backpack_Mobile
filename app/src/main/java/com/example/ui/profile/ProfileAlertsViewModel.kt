@@ -32,15 +32,29 @@ class ProfileAlertsViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun loadNotifications() {
+        val prefs = getApplication<Application>().getSharedPreferences(
+            "backpack_notified_alerts",
+            android.content.Context.MODE_PRIVATE
+        )
         viewModelScope.launch {
             repository.observeNotifications().collectLatest { list ->
                 val previousList = _notifications.value
-                val newUnreadItems = list.filter { !it.read && previousList.none { prev -> prev.id == it.id } }
+                val alreadyNotified = prefs.getStringSet("notified_ids", emptySet()) ?: emptySet()
+                val newUnreadItems = list.filter { item ->
+                    !item.read &&
+                        item.id.isNotBlank() &&
+                        item.id !in alreadyNotified &&
+                        previousList.none { prev -> prev.id == item.id }
+                }
                 _notifications.value = list
                 unreadCount.value = list.count { !it.read }
 
-                newUnreadItems.forEach { item ->
-                    com.example.util.NotificationHelper.showPushNotification(getApplication(), item)
+                if (newUnreadItems.isNotEmpty()) {
+                    newUnreadItems.take(3).forEach { item ->
+                        com.example.util.NotificationHelper.showPushNotification(getApplication(), item)
+                    }
+                    val updated = (alreadyNotified + newUnreadItems.map { it.id }).toSet()
+                    prefs.edit().putStringSet("notified_ids", updated).apply()
                 }
             }
         }
